@@ -1,4 +1,4 @@
-const { auth } = require("../firebaseConfig")
+const { auth } = require("../../netlify/functions/firebase-config")
 
 const checkAuth = (req, res, next) => {
 	const token = req.headers.authorization?.split(" ")[1]

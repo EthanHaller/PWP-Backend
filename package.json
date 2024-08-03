@@ -17,6 +17,7 @@
     "firebase": "^10.12.3",
     "firebase-admin": "^12.2.0",
     "node-mailjet": "^6.0.5",
-    "nodemailer": "^6.9.14"
+    "nodemailer": "^6.9.14",
+    "serverless-http": "^3.2.0"
   }
 }

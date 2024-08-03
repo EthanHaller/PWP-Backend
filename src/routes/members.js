@@ -1,7 +1,7 @@
 var express = require("express")
 var router = express.Router()
 const { collection, getDocs, addDoc, updateDoc, doc } = require("firebase/firestore")
-const { db } = require("../firebaseConfig")
+const { db } = require("../../netlify/functions/firebase-config")
 
 const addMember = async (req, res) => {
 	try {
