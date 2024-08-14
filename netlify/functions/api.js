@@ -4,6 +4,7 @@ const cors = require("cors")
 
 const membersRouter = require("../../src/routes/members")
 const projectsRouter = require("../../src/routes/projects")
+const partnersRouter = require("../../src/routes/partners")
 const adminRouter = require("../../src/routes/admin")
 
 const app = express()
@@ -22,6 +23,7 @@ app.use(express.urlencoded({ extended: true }))
 // Routes
 app.use("/.netlify/functions/api/members", membersRouter)
 app.use("/.netlify/functions/api/projects", projectsRouter)
+app.use("/.netlify/functions/api/partners", partnersRouter)
 app.use("/.netlify/functions/api/admin", adminRouter)
 
 exports.handler = serverless(app)
