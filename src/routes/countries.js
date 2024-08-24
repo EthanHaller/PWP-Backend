@@ -1,19 +1,29 @@
 var express = require("express")
 var router = express.Router()
-const { collection, getDocs, addDoc } = require("firebase/firestore")
+const { collection, getDocs, writeBatch, doc, deleteDoc } = require("firebase/firestore")
 const { db } = require("../../netlify/functions/firebase-config")
 
-const addCountry = async (req, res) => {
+const addCountries = async (req, res) => {
 	try {
-		const countryData = req.body
+		const countriesData = req.body.countries
 		const countriesCollection = collection(db, "countries")
-		const newCountryRef = await addDoc(countriesCollection, countryData)
-		res.status(201).send({ id: newCountryRef.id })
+		const batch = writeBatch(db)
+
+		countriesData.forEach((countryName) => {
+			const countryData = { name: countryName } 
+			const newCountryRef = doc(countriesCollection)
+			batch.set(newCountryRef, countryData)
+		})
+
+		await batch.commit()
+
+		res.status(201).send({ message: "Countries added successfully" })
 	} catch (error) {
 		res.status(500).send(error.message)
 	}
 }
-router.post("/add", addCountry)
+
+router.post("/add", addCountries)
 
 const getCountries = async (req, res) => {
 	try {
@@ -33,5 +43,17 @@ const getCountries = async (req, res) => {
 	}
 }
 router.get("/", getCountries)
+
+const deleteCountry = async (req, res) => {
+	try {
+		const { id } = req.params
+		const countryDoc = doc(db, "countries", id)
+		await deleteDoc(countryDoc)
+		res.status(200).send({ message: "Country deleted successfully" })
+	} catch (error) {
+		res.status(500).send(error.message)
+	}
+}
+router.delete("/delete/:id", deleteCountry)
 
 module.exports = router
