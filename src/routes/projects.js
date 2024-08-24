@@ -94,7 +94,6 @@ const updateProject = async (req, res) => {
 
 		res.status(201).send({ id: projectId, ...updatedProjectDoc.data() })
 	} catch (error) {
-		console.error(error)
 		res.status(500).send(error.message)
 	}
 }
