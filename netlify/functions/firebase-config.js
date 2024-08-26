@@ -2,6 +2,8 @@ const { initializeApp } = require("firebase/app")
 const { getFirestore } = require("firebase/firestore")
 const { getStorage } = require("firebase/storage")
 const { getAuth } = require("firebase/auth")
+const admin = require('firebase-admin');
+const serviceAccount = require('../../serviceAccountKey.json');
 
 const firebaseConfig = {
 	apiKey: process.env.apiKey,
@@ -13,9 +15,13 @@ const firebaseConfig = {
 	measurementId: process.env.measurementId,
 }
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
 const firebase = initializeApp(firebaseConfig)
 const db = getFirestore(firebase)
 const auth = getAuth(firebase)
 const storage = getStorage(firebase)
 
-module.exports = { db, auth, storage }
+module.exports = { db, auth, storage, admin }

@@ -1,4 +1,4 @@
-const { auth } = require("../../netlify/functions/firebase-config")
+const { admin } = require("../../netlify/functions/firebase-config")
 
 const checkAuth = (req, res, next) => {
 	const token = req.headers.authorization?.split(" ")[1]
@@ -7,7 +7,7 @@ const checkAuth = (req, res, next) => {
 		return res.status(401).json({ message: "Unauthorized" })
 	}
 
-	auth.verifyIdToken(token)
+	admin.auth().verifyIdToken(token)
 		.then((decodedToken) => {
 			req.user = decodedToken
 			next()
