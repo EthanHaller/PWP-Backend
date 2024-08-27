@@ -1,6 +1,6 @@
 var express = require("express")
 var router = express.Router()
-const { doc, getDoc } = require("firebase/firestore")
+const { doc, getDoc, updateDoc } = require("firebase/firestore")
 const { db } = require("../../netlify/functions/firebase-config")
 
 const getRecruitmentInfo = async (req, res) => {
@@ -18,5 +18,20 @@ const getRecruitmentInfo = async (req, res) => {
 	}
 }
 router.get("/", getRecruitmentInfo)
+
+const updateRecruitmentInfo = async (req, res) => {
+	try {
+		const recruitmentData = req.body
+		const recruitmentDocRef = doc(db, "recruitment", "generalInfo")
+
+		await updateDoc(recruitmentDocRef, recruitmentData)
+		const updatedRecruitmentDoc = await getDoc(recruitmentDocRef)
+
+		res.status(201).send({ ...updatedRecruitmentDoc.data() })
+	} catch (error) {
+		res.status(500).send(error.message)
+	}
+}
+router.put("/update", updateRecruitmentInfo)
 
 module.exports = router
