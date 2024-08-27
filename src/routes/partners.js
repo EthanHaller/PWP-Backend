@@ -100,11 +100,23 @@ const deletePartner = async (req, res) => {
 		const filePath = imageUrl.split("/").slice(-1).join("/").split("?")[0].replace("%2F", "/")
 
 		const fileRef = ref(storage, filePath)
-		await deleteObject(fileRef)
+
+		try {
+			await getDownloadURL(fileRef)
+			await deleteObject(fileRef)
+		} catch (error) {
+			if (error.code === "storage/object-not-found") {
+				console.log("Image does not exist.")
+			} else {
+				throw error
+			}
+		}
+
 		await deleteDoc(partnerRef)
 
 		res.status(200).send({ message: "Partner and associated image deleted successfully" })
 	} catch (error) {
+		console.error(error)
 		res.status(500).send(error.message)
 	}
 }

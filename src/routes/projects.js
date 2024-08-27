@@ -118,12 +118,33 @@ const deleteProject = async (req, res) => {
 		const coverImageRef = ref(storage, coverImagePath)
 		const presentationRef = ref(storage, presentationPath)
 
-		await deleteObject(coverImageRef)
-		await deleteObject(presentationRef)
+		try {
+			await getDownloadURL(coverImageRef)
+			await deleteObject(coverImageRef)
+		} catch (error) {
+			if (error.code === "storage/object-not-found") {
+				console.log("Cover image does not exist.")
+			} else {
+				throw error
+			}
+		}
+
+		try {
+			await getDownloadURL(presentationRef)
+			await deleteObject(presentationRef)
+		} catch (error) {
+			if (error.code === "storage/object-not-found") {
+				console.log("Presentation file does not exist.")
+			} else {
+				throw error
+			}
+		}
+
 		await deleteDoc(projectRef)
 
 		res.status(200).send({ message: "Project and associated files deleted successfully" })
 	} catch (error) {
+		console.error(error)
 		res.status(500).send(error.message)
 	}
 }

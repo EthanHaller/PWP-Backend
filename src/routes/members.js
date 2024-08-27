@@ -105,11 +105,23 @@ const deleteMember = async (req, res) => {
 		const filePath = headshotUrl.split("/").slice(-1).join("/").split("?")[0].replace("%2F", "/")
 
 		const fileRef = ref(storage, filePath)
-		await deleteObject(fileRef)
+
+		try {
+			await getDownloadURL(fileRef)
+			await deleteObject(fileRef)
+		} catch (error) {
+			if (error.code === "storage/object-not-found") {
+				console.log("Headshot does not exist.")
+			} else {
+				throw error
+			}
+		}
+
 		await deleteDoc(memberRef)
 
 		res.status(200).send({ message: "Member and associated headshot deleted successfully" })
 	} catch (error) {
+		console.error(error)
 		res.status(500).send(error.message)
 	}
 }
