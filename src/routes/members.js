@@ -46,7 +46,7 @@ const addMember = async (req, res) => {
 
 		const headshotUrl = await getDownloadURL(storageRef)
 
-		const memberData = { name, execRole, headshotUrl }
+		const memberData = { name, execRole, headshotUrl, relativeOrder: 999 }
 
 		const membersCollection = collection(db, "members")
 		const newMemberRef = await addDoc(membersCollection, memberData)
@@ -79,6 +79,11 @@ const updateMember = async (req, res) => {
 			memberData.headshotUrl = headshotUrl
 		}
 
+		const memberDoc = await getDoc(memberRef)
+		const curData = memberDoc.data()
+		if (memberData?.execRole && curData?.execRole && memberData?.execRole !== curData?.execRole) {
+			memberData.relativeOrder = 999
+		}
 		await updateDoc(memberRef, memberData)
 		const updatedMemberDoc = await getDoc(memberRef)
 
