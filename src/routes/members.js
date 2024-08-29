@@ -9,22 +9,30 @@ const { db, storage } = require("../../netlify/functions/firebase-config")
 const getMembers = async (req, res) => {
 	try {
 		const membersCollection = collection(db, "members")
+		const execRolesCollection = collection(db, "execRoles")
 		const querySnapshot = await getDocs(membersCollection)
 		const exec = []
 		const nonExec = []
 		const totalCount = querySnapshot.size
 
-		querySnapshot.forEach((doc) => {
-			const member = { id: doc.id, ...doc.data() }
+		for (const d of querySnapshot.docs) {
+			const member = { id: d.id, ...d.data() }
 			if (member.execRole) {
+				const execRoleDoc = await getDoc(member.execRole)
+				if (execRoleDoc.exists()) {
+					const execRoleData = execRoleDoc.data()
+					member.execRole = execRoleData.name
+					member.relativeOrder = execRoleData.relativeOrder
+				}
 				exec.push(member)
 			} else {
 				nonExec.push(member)
 			}
-		})
+		}
 
 		res.status(200).send({ totalCount, exec, nonExec })
 	} catch (error) {
+		console.error(error)
 		res.status(500).send(error.message)
 	}
 }
@@ -46,7 +54,21 @@ const addMember = async (req, res) => {
 
 		const headshotUrl = await getDownloadURL(storageRef)
 
-		const memberData = { name, execRole, headshotUrl, relativeOrder: 999 }
+		let execRoleRef = null
+		if (execRole) {
+			const execRolesCollection = collection(db, "execRoles")
+			const execRoleSnapshot = await getDocs(execRolesCollection)
+			let execRoleDoc = execRoleSnapshot.docs.find((doc) => doc.data().name === execRole)
+
+			if (!execRoleDoc) {
+				const newExecRoleRef = await addDoc(execRolesCollection, { name: execRole, relativeOrder: 999 })
+				execRoleRef = newExecRoleRef
+			} else {
+				execRoleRef = execRoleDoc.ref
+			}
+		}
+
+		const memberData = { name, execRole: execRoleRef, headshotUrl }
 
 		const membersCollection = collection(db, "members")
 		const newMemberRef = await addDoc(membersCollection, memberData)
@@ -79,16 +101,27 @@ const updateMember = async (req, res) => {
 			memberData.headshotUrl = headshotUrl
 		}
 
-		const memberDoc = await getDoc(memberRef)
-		const curData = memberDoc.data()
-		if (memberData?.execRole && curData?.execRole && memberData?.execRole !== curData?.execRole) {
-			memberData.relativeOrder = 999
+		if (memberData.execRole) {
+			const execRolesCollection = collection(db, "execRoles")
+			const execRoleSnapshot = await getDocs(execRolesCollection)
+			let execRoleDoc = execRoleSnapshot.docs.find((doc) => doc.data().name === memberData.execRole)
+
+			if (!execRoleDoc) {
+				const newExecRoleRef = await addDoc(execRolesCollection, { name: memberData.execRole, relativeOrder: 999 })
+				memberData.execRole = newExecRoleRef
+			} else {
+				memberData.execRole = execRoleDoc.ref
+			}
 		}
+
+		console.log(memberData)
+
 		await updateDoc(memberRef, memberData)
 		const updatedMemberDoc = await getDoc(memberRef)
 
-		res.status(201).send({ id: memberId, ...updatedMemberDoc.data() })
+		res.status(200).send({ id: memberId, ...updatedMemberDoc.data() })
 	} catch (error) {
+		console.error(error)
 		res.status(500).send(error.message)
 	}
 }
@@ -136,29 +169,21 @@ const updateRoleOrder = async (req, res) => {
 	try {
 		const { roles } = req.body
 
-		const membersCollection = collection(db, "members")
-		const querySnapshot = await getDocs(membersCollection)
-		const members = []
-
-		querySnapshot.forEach((doc) => {
-			const member = { id: doc.id, ...doc.data() }
-			if (member.execRole) {
-				members.push(member)
-			}
-		})
-
+		const execRolesCollection = collection(db, "execRoles")
+		const execRoleSnapshot = await getDocs(execRolesCollection)
 		const batch = writeBatch(db)
-		members.forEach((member) => {
-			const newOrderIndex = roles.indexOf(member.execRole)
-			if (newOrderIndex !== -1) {
-				const memberRef = doc(db, "members", member.id)
-				batch.update(memberRef, { relativeOrder: newOrderIndex })
+
+		roles.forEach((roleName, index) => {
+			const execRoleDoc = execRoleSnapshot.docs.find((doc) => doc.data().name === roleName)
+			if (execRoleDoc) {
+				const execRoleRef = doc(execRolesCollection, execRoleDoc.id)
+				batch.update(execRoleRef, { relativeOrder: index })
 			}
 		})
 
 		await batch.commit()
 
-		res.status(200).send({ message: "Role order updated successfully" })
+		res.status(200).send({ message: "Role order updated successfully in execRoles collection" })
 	} catch (error) {
 		res.status(500).send(error.message)
 	}
