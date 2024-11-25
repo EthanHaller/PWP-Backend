@@ -35,8 +35,6 @@ const addProject = async (req, res) => {
 			return res.status(400).send({ message: "Cover image and presentation file are required" })
 		}
 
-		const dateObj = new Date(date)
-
 		const coverImageName = `projects/${Date.now()}-${coverImage.originalname}`
 		const coverImageRef = ref(storage, coverImageName)
 		await uploadBytes(coverImageRef, coverImage.buffer, { contentType: coverImage.mimetype })
@@ -47,7 +45,7 @@ const addProject = async (req, res) => {
 		await uploadBytes(presentationRef, presentation.buffer, { contentType: presentation.mimetype })
 		const presentationUrl = await getDownloadURL(presentationRef)
 
-		const projectData = { title, coverImageUrl, presentationUrl, date: dateObj }
+		const projectData = { title, coverImageUrl, presentationUrl, date: date }
 
 		const projectsCollection = collection(db, "projects")
 		const newProjectRef = await addDoc(projectsCollection, projectData)
@@ -66,10 +64,6 @@ const updateProject = async (req, res) => {
 		const projectRef = doc(db, "projects", projectId)
 
 		let projectData = req.body
-
-		if (projectData.date) {
-			projectData.date = new Date(projectData.date)
-		}
 
 		if (req.files.coverImage) {
 			const coverImage = req.files.coverImage[0]
